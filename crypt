@@ -5,105 +5,105 @@ require 'base64'
 require 'io/console'
 
 module Crypt
-	def self.encrypt(dec, key)
-		cipher = OpenSSL::Cipher.new("aes-256-cbc")
-		cipher.encrypt
-		cipher.key = Digest::SHA256.digest(key)
-		cipher.iv = iv = cipher.random_iv
-		enc = cipher.update(dec)
-		enc << cipher.final
-		Base64.encode64(iv + enc).gsub /\s/, ''
-	end
+  def self.encrypt(dec, key)
+    cipher = OpenSSL::Cipher.new("aes-256-cbc")
+    cipher.encrypt
+    cipher.key = Digest::SHA256.digest(key)
+    cipher.iv = iv = cipher.random_iv
+    enc = cipher.update(dec)
+    enc << cipher.final
+    Base64.encode64(iv + enc).gsub /\s/, ''
+  end
 
-	def self.decrypt(enc, key)
-		enc = Base64.decode64(enc)
-		cipher = OpenSSL::Cipher.new("aes-256-cbc")
-		cipher.decrypt
-		cipher.key = Digest::SHA256.digest(key)
-		cipher.iv = enc.slice!(0,16)
-		dec = cipher.update(enc)
-		dec << cipher.final
-	end
+  def self.decrypt(enc, key)
+    enc = Base64.decode64(enc)
+    cipher = OpenSSL::Cipher.new("aes-256-cbc")
+    cipher.decrypt
+    cipher.key = Digest::SHA256.digest(key)
+    cipher.iv = enc.slice!(0,16)
+    dec = cipher.update(enc)
+    dec << cipher.final
+  end
 end
 
 # if used as a loaded module
 if ARGV.length < 1
-	exit
+  exit
 end
 
 def help
-	puts "\nUsage example (-e --encrypt, -d --decrypt):"
-	puts "$ crypt -e input output"
-	puts "\nInclude a key:"
-	puts "$ crypt -d --key=password input\n"
-	exit
+  puts "\nUsage example (-e --encrypt, -d --decrypt):"
+  puts "$ crypt -e input output"
+  puts "\nInclude a key:"
+  puts "$ crypt -d --key=password input\n"
+  exit
 end
 
 def get_key(mode)
-	print 'Enter key: '
-	k1 = STDIN.noecho(&:gets).chomp
-	puts
+  print 'Enter key: '
+  k1 = STDIN.noecho(&:gets).chomp
+  puts
 
-	if mode == 'd'
-		return k1
-	end
+  if mode == 'd'
+    return k1
+  end
 
-	print 'Re-enter key: '
-	k2 = STDIN.noecho(&:gets).chomp
-	puts
+  print 'Re-enter key: '
+  k2 = STDIN.noecho(&:gets).chomp
+  puts
 
-	if k1 == k2
-		return k1
-	else
-		puts "\nKeys did not match, please try again\n"
-		return get_key(mode)
-	end
+  if k1 == k2
+    return k1
+  else
+    puts "\nKeys did not match, please try again\n"
+    return get_key(mode)
+  end
 end
 
 def process_input(input)
-	# use as string
-	output = input
+  # use as string
+  output = input
 
-	# get file contents
-	if File.file?(input)
-		read_file = File.new(input)
-		output = read_file.read
-		read_file.close
-	elsif File.directory?(input)
-		puts "\nEncrypting directories is not supported; however, you can compress the directory into a zip or tar file then you can encrypt that.\n"
-		exit
-	end
+  # get file contents
+  if File.file?(input)
+    read_file = File.new(input)
+    output = read_file.read
+    read_file.close
+  elsif File.directory?(input)
+    puts "\nEncrypting directories is not supported; however, you can compress the directory into a zip or tar file then you can encrypt that.\n"
+    exit
+  end
 
-	return output
+  return output
 end
 
 # determine whether to encrypt or decrypt
 $mode = nil
 if ['-e', '--encrypt', '-d', '--decrypt'].include? ARGV[0]
-	$mode = /-e/ =~ ARGV.shift ? 'e' : 'd'
+  $mode = /-e/ =~ ARGV.shift ? 'e' : 'd'
 else 
-	puts "\nPlease specify valid mode"
-	help
+  puts "\nPlease specify valid mode"
+  help
 end
 
 # grab key if defined
 $key = nil
 if /--key=.*/ =~ ARGV[0]
-	$key = ARGV.shift.split('=').last
+  $key = ARGV.shift.split('=').last
 end
 
 # grab the input
 $input = ARGV.shift || nil
 if !$input
-	puts "\nInput required"
-	help
+  puts "\nInput required"
+  help
 end
 
 # grab output if applicable
 $output = ARGV.shift || nil
 
 if $output && File.directory?($output)
-	$output += '_' + Time.now.to_i.to_s
+  $output += '_' + Time.now.to_i.to_s
 end
 
 # ensure we have a key
@@ -112,24 +112,24 @@ $key ||= get_key($mode)
 # get encrypted/decrypted data
 $result = nil
 if $mode == 'e'
-	$result = Crypt.encrypt(process_input($input), $key)
+  $result = Crypt.encrypt(process_input($input), $key)
 else
-	begin
-		$result = Crypt.decrypt(process_input($input), $key)
-	rescue
-		puts "Bad key"
-		exit
-	end
+  begin
+    $result = Crypt.decrypt(process_input($input), $key)
+  rescue
+    puts "Bad key"
+    exit
+  end
 end
 
 # output encrypt/decrypt data
 if !$output
-	puts $result
-	exit
+  puts $result
+  exit
 else
-	write_file = File.new($output, 'w')
-	write_file.write($result)
-	write_file.close
+  write_file = File.new($output, 'w')
+  write_file.write($result)
+  write_file.close
 end
 
 puts "Success!"
