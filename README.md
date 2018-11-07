@@ -25,6 +25,8 @@ end
 
 ### As a command line utility
 
+Please note if ruby is not installed at /usr/bin/ruby and whatever directory the crypt file is not in your $PATH, running the commands as see below will not work, you may have to pass the script file to ruby something like this: `$ ruby crypt -e "some text to encrypt"`.
+
 Encrypt a simple message:
 ```bash
 $ crypt -e "please encrypt me"
