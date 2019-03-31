@@ -118,7 +118,7 @@ else
     $result = Crypt.decrypt(process_input($input), $key)
   rescue
     puts "Bad key"
-    exit
+    exit(false)
   end
 end
 
